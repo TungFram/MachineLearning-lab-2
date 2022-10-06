@@ -1,16 +1,16 @@
 ﻿import gdown
 import re
+import tabulate
 
-import gdown as gdown
 import numpy as np
 import pandas as pd
 
 download_pattern = 'https://drive.google.com/uc?id='
 filenames = [
-    'tr_mcc_codes',
-    'tr_types',
-    'transactions',
-    'gender_train'
+    'tr_mcc_codes.scv',
+    'tr_types.scv',
+    'transactions.scv',
+    'gender_train.scv'
 ]
 share_urls = [
     'https://drive.google.com/file/d/10J8RzMIhoYHiad49r-oWNMAk-V5lo3OE/view?usp=sharing',
@@ -28,6 +28,10 @@ for file_id in ids:
     dwnld_link = download_pattern + file_id
     download_links.append(dwnld_link)
 
+files = []
+for i in range(len(download_links)):
+    files.append(gdown.download(download_links[i], filenames[i]))
+
 files_info = pd.DataFrame(dtype=str,
                           columns=[
                               'file_name',
@@ -41,14 +45,12 @@ files_info['file_name'] = filenames
 files_info['share_url'] = share_urls
 files_info['id'] = ids
 files_info['download_url'] = download_links
+files_info['file'] = files
 
 filenames.clear()
 share_urls.clear()
 ids.clear()
 download_links.clear()
+files.clear()
 
-files = []
-for i in range(len(files_info.download_url)):
-    files.append(gdown.download(files_info.download_url[i], files_info.file_name[i]))
-
-
+print(tabulate.tabulate(files_info, headers='keys', tablefmt='fancy_grid'))
