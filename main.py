@@ -52,8 +52,6 @@ filenames.clear()
 share_urls.clear()
 ids.clear()
 download_links.clear()
-
-
 # files.clear()
 
 def print_dataframe(dataframe):
@@ -112,60 +110,101 @@ subsample = transactions['tr_type'].sample(1000)  # Series of types
 #       types_contained_condition / subsample.size)
 
 # ############################################### Task 2 #########################################################
-
 # Для столбца tr_type датафрейма transactions посчитайте частоту встречаемости всех типов
 # транзакций tr_type в transactions. 
 # Выведите топ-10 транзакций по частоте встречаемости (вывести для них tr_description тоже). 
 
-# most_frequent = pd.DataFrame(
-#     index=tr_types.index,
-#     columns=['occurrence', 'tr_description'],
-# )
+types_frequency = pd.DataFrame(
+    index=tr_types.index,
+    columns=['occurrence', 'tr_description'],
+)
 
-# for type_of_transaction in tr_types.index:
-#     most_frequent.occurrence[type_of_transaction]     = transactions.tr_type[(transactions.tr_type == type_of_transaction)].size
-#     most_frequent.tr_description[type_of_transaction] = tr_types.tr_description[type_of_transaction]
-# 
-# sorted_occurrence = most_frequent.sort_values(by='occurrence', ignore_index=False, ascending=False).head(10)
-# print_dataframe(sorted_occurrence)
+for type_of_transaction in tr_types.index:
+    types_frequency.occurrence[type_of_transaction] = \
+        transactions.tr_type[(transactions.tr_type == type_of_transaction)].size
+    types_frequency.tr_description[type_of_transaction] = tr_types.tr_description[type_of_transaction]
+
+sorted_occurrence = types_frequency.sort_values(by='occurrence', ignore_index=False, ascending=False).head(10)
+print_dataframe(sorted_occurrence)
 
 # ############################################### Task 3 #########################################################
 # В датафрейме transactions найдите клиента с максимальной суммой приходов на карту.
 # В датафрейме transactions найдите клиента с максимальной суммой расходов по карте.
 # Найдите модуль разницы для этих клиентов между суммой расходов и суммой приходов.
 
-# customer_info = pd.DataFrame(
-#     index=transactions.index.unique(),
-#     columns=['expenses', 'deposits']
-# )
-# 
-# groups_of_customer = transactions.groupby(level='customer_id')
-# 
-# for customer_id, operations in groups_of_customer:
-#     positive_sum = 0
-#     negative_sum = 0
-# 
-#     for number in operations.amount:
-#         if number > 0:
-#             positive_sum += number
-#         else:
-#             negative_sum -= number
-# 
-#     customer = pd.Series(data={
-#         'expenses': round(negative_sum, 3),
-#         'deposits': round(positive_sum, 3)
-#     })
-#     customer_info.loc[customer_id] = customer
-# 
-# customer_info['difference'] = np.abs(customer_info.deposits - customer_info.expenses)
-# max_customer = customer_info.sort_values(by='deposits', ignore_index=False, ascending=False).head(1)
-# min_customer = customer_info.sort_values(by='expenses', ignore_index=False, ascending=False).head(1)
-# 
-# print("\nКлиент с максимальной суммой приходов на карту: \n")
-# print_dataframe(max_customer)
-# 
-# print("\nКлиент с максимальной суммой расходов на карту: \n")
-# print_dataframe(min_customer)
+customer_info = pd.DataFrame(
+    index=transactions.index.unique(),
+    columns=['expenses', 'deposits']
+)
+
+groups_of_customer = transactions.groupby(level='customer_id')
+
+for customer_id, operations in groups_of_customer:
+    positive_sum = 0
+    negative_sum = 0
+
+    for number in operations.amount:
+        if number > 0:
+            positive_sum += number
+        else:
+            negative_sum += number
+
+    customer = pd.Series(data={
+        'expenses': round(negative_sum, 3),
+        'deposits': round(positive_sum, 3)
+    })
+    customer_info.loc[customer_id] = customer
+
+customer_info['difference'] = np.abs(customer_info.deposits - customer_info.expenses)
+
+min_customer = customer_info.sort_values(by='expenses', ignore_index=False, ascending=True).head(1)
+max_customer = customer_info.sort_values(by='deposits', ignore_index=False, ascending=False).head(1)
+
+print("\nКлиент с максимальной суммой приходов на карту: ")
+print_dataframe(max_customer)
+
+print("\nКлиент с максимальной суммой расходов на карту: ")
+print_dataframe(min_customer)
 
 # ############################################### Task 4 #########################################################
+# Найдите среднее арифметическое и медиану по amount по всем типам транзакций из топ 10 из задания 2
+# Найдите среднее арифметическое и медиану по amount по всем типам транзакций для клиентов из задания 3
+
+tr_types_top10_info = pd.DataFrame(
+    columns=sorted_occurrence.index.unique()
+)
+
+for type_of_transaction in sorted_occurrence.index.unique():
+    tr_types_top10_info[type_of_transaction] = transactions[transactions.tr_type == type_of_transaction].amount.describe()
+
+print("\nИнформация о amount по всем типам транзакций из топ 10 (результат задания 2):")
+print_dataframe(tr_types_top10_info)
+
+tr_types_min_customer_info = pd.DataFrame()
+tr_types_max_customer_info = pd.DataFrame()
+min_customer_id = min_customer.index[0]
+max_customer_id = max_customer.index[0]
+
+for type_of_transaction in transactions.loc[min_customer_id].tr_type.unique():
+    this_cus_operations = transactions.loc[min_customer_id]
+    tr_types_min_customer_info[type_of_transaction] = \
+        this_cus_operations[this_cus_operations.tr_type == type_of_transaction].amount.describe()
+
+if min_customer_id == max_customer_id:
+    print("\nТ.к. идентификаторы клиента с максимальной суммой приходов на карту и "
+          "клиента с максимальной суммой расходов по карте совпадают, таблица для одного человека только одна:")
+    print_dataframe(tr_types_min_customer_info)
+else:
+    print("\nИнформация о amount по всем типам транзакций для клиента с максимальной суммой расходов по карте"
+          " (результат задания 3):")
+    print_dataframe(tr_types_min_customer_info)
+    
+    for type_of_transaction in transactions.loc[max_customer_id].tr_type.unique():
+        this_cus_operations = transactions.loc[max_customer_id]
+        tr_types_max_customer_info[type_of_transaction] = \
+            this_cus_operations[this_cus_operations.tr_type == type_of_transaction].amount.describe()
+    
+    print("\nИнформация о amount по всем типам транзакций для клиента с максимальной суммой приходов на карту"
+          " (результат задания 3):")
+    print_dataframe(tr_types_max_customer_info)
 
