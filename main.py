@@ -298,6 +298,34 @@ print_dataframe(top10_diff_between_male_and_female_expenses)
 # Из поля tr_datetime выделите час tr_hour, в который произошла транзакция, как первые 2 цифры до ":".
 # Посчитайте количество транзакций с amount<0 в ночное время для мужчин и женщин. Ночное время - это примерно 00-06 часов.
 
+# Не работает, т.к. в некоторых строчках 60 секунд, например 15:42:60. (Гениально, конечно).
+# Из-за этого не может нормально конвертировать в datetime.
+def get_tr_hour(tr_datetime):
+    print(tr_datetime, type(tr_datetime))
+    tr_hour = pd.to_datetime(transactions.tr_datetime[-8:]).dt.hour
+    print(tr_hour, type(tr_hour))
+    return tr_hour
+
+
+# Не хочет применяться в отсеивании таблицы, воспринимается как обычный массив вместо конкретного значения в строчке
+def check_tr_hour_for_night_time(tr_hour):
+    begin_night = 0
+    end_night = 6
+    return (int(tr_hour) >= begin_night) & (int(tr_hour) <= end_night)
+
+
+night_expenses = transactions[(transactions.amount < 0.0)]
+night_expenses['tr_hour'] = pd.Series(int(tr_datetime[-8:-6]) for tr_datetime in transactions.tr_datetime)
+night_expenses = night_expenses[(night_expenses.tr_hour >= 0) & (night_expenses.tr_hour < 6)]
+
+male_night_expenses = night_expenses[(night_expenses.gender == genders['male'])]
+female_night_expenses = night_expenses[(night_expenses.gender == genders['female'])]
+
+male_number_of_transactions = len(male_night_expenses)
+female_number_of_transactions = len(female_night_expenses)
+
+print("Количество операций по снятию средств среди мужчин в ночное время суток:", male_number_of_transactions)
+print("Количество операций по снятию средств среди женщин в ночное время суток:", female_number_of_transactions)
 
 
 
