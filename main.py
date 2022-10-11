@@ -57,7 +57,7 @@ download_links.clear()
 # files.clear()
 
 def print_dataframe(dataframe):
-    print(tabulate.tabulate(dataframe, headers='keys', tablefmt='fancy_grid'))
+    print(tabulate.tabulate(dataframe, headers='keys', numalign='center', stralign='left', tablefmt='fancy_grid', ))
 
 
 print_dataframe(files_info)
@@ -154,17 +154,15 @@ print_dataframe(max_customer)
 print("\nКлиент с максимальной суммой расходов на карту: ")
 print_dataframe(min_customer)
 
-# # ############################################### Task 4 #########################################################
-# # Найдите среднее арифметическое и медиану по amount по всем типам транзакций из топ 10 из задания 2
-# # Найдите среднее арифметическое и медиану по amount по всем типам транзакций для клиентов из задания 3
+# ############################################### Task 4 #########################################################
+# Найдите среднее арифметическое и медиану по amount по всем типам транзакций из топ 10 из задания 2
+# Найдите среднее арифметическое и медиану по amount по всем типам транзакций для клиентов из задания 3
 
 tr_types_top10_info = pd.DataFrame(
     index=top10.index,
-    columns=['mean', 'median']
 )
 
-all_top10_trs = transactions[transactions.tr_type.isin(top10.index)]
-all_top10_tr_groups = all_top10_trs.groupby('tr_type')
+all_top10_tr_groups = transactions[transactions.tr_type.isin(top10.index)].groupby('tr_type')
 
 tr_types_top10_info['mean'] = all_top10_tr_groups.amount.mean()
 tr_types_top10_info['median'] = all_top10_tr_groups.amount.median()
@@ -172,39 +170,143 @@ tr_types_top10_info['median'] = all_top10_tr_groups.amount.median()
 print("\nИнформация о amount по всем типам транзакций из топ 10 (результат задания 2):")
 print_dataframe(tr_types_top10_info)
 
-# надо написать функцию, которая дает все типы транзакций с их описанием у клиента. 
 
-# tr_types_min_customer_info = pd.DataFrame()
-# tr_types_max_customer_info = pd.DataFrame()
-# min_customer_id = min_customer.index[0]
-# max_customer_id = max_customer.index[0]
-# 
-# for type_of_transaction in transactions.loc[min_customer_id].tr_type.unique():
-#     this_cus_operations = transactions.loc[min_customer_id]
-#     tr_types_min_customer_info[type_of_transaction] = \
-#         this_cus_operations[this_cus_operations.tr_type == type_of_transaction].amount.describe()
+def get_mean_and_median_for_each_tr_type_of_customer(id_of_cus):
+    all_customer_transactions = transactions.loc[id_of_cus].groupby(by='tr_type', as_index=True)
+    mean = all_customer_transactions.amount.mean()
+    median = all_customer_transactions.amount.median()
+    return mean, median
 
-# if min_customer_id == max_customer_id:
-#     print("\nТ.к. идентификаторы клиента с максимальной суммой приходов на карту и "
-#           "клиента с максимальной суммой расходов по карте совпадают, таблица для одного человека только одна:")
-#     print_dataframe(tr_types_min_customer_info)
-# else:
-#     print("\nИнформация о amount по всем типам транзакций для клиента с максимальной суммой расходов по карте"
-#           " (результат задания 3):")
-#     print_dataframe(tr_types_min_customer_info)
-# 
-#     for type_of_transaction in transactions.loc[max_customer_id].tr_type.unique():
-#         this_cus_operations = transactions.loc[max_customer_id]
-#         tr_types_max_customer_info[type_of_transaction] = \
-#             this_cus_operations[this_cus_operations.tr_type == type_of_transaction].amount.describe()
-# 
-#     print("\nИнформация о amount по всем типам транзакций для клиента с максимальной суммой приходов на карту"
-#           " (результат задания 3):")
-#     print_dataframe(tr_types_max_customer_info)
-# 
-# # ############################################### Task 5 #########################################################
-# 
-# transactions = pd.merge(transactions, gender_train, how='left')
-# transactions = pd.merge(transactions, tr_mcc_codes, how='inner')
-# transactions = pd.merge(transactions, tr_types, how='inner')
-# transactions.shape
+
+min_customer_id = min_customer.index[0]
+max_customer_id = max_customer.index[0]
+tr_types_min_customer_info = pd.DataFrame(index=transactions.loc[min_customer_id].tr_type.unique())
+tr_types_max_customer_info = pd.DataFrame(index=transactions.loc[max_customer_id].tr_type.unique())
+
+tr_types_min_customer_info['mean'], tr_types_min_customer_info['median'] = \
+    get_mean_and_median_for_each_tr_type_of_customer(min_customer_id)
+
+if min_customer_id == max_customer_id:
+    print("\nТ.к. идентификаторы клиента с максимальной суммой приходов на карту и "
+          "клиента с максимальной суммой расходов по карте совпадают, таблица для одного человека только одна:")
+    print_dataframe(tr_types_min_customer_info)
+else:
+    print("\nИнформация о amount по всем типам транзакций для клиента с максимальной суммой расходов по карте"
+          " (результат задания 3):")
+    print_dataframe(tr_types_min_customer_info)
+
+    tr_types_max_customer_info['mean'], tr_types_min_customer_info['median'] = \
+        get_mean_and_median_for_each_tr_type_of_customer(min_customer_id)
+
+    print("\nИнформация о amount по всем типам транзакций для клиента с максимальной суммой приходов на карту"
+          " (результат задания 3):")
+    print_dataframe(tr_types_max_customer_info)
+
+# ############################################### Task 5 #########################################################
+
+transactions = pd.merge(transactions.reset_index(), gender_train.reset_index(), how='left')
+transactions = pd.merge(transactions.reset_index(), tr_mcc_codes.reset_index(), how='inner')
+transactions = pd.merge(transactions.reset_index(), tr_types.reset_index(), how='inner')
+print_dataframe(transactions.sample(10))
+print("Размеры соединённой матрицы:", transactions.shape)
+
+genders = {
+    'male': 0,
+    'female': 1
+}
+
+# Определите модуль разницы между средними тратами женщин и мужчин (трата - отрицательное значение amount).
+# Определите модуль разницы между средними поступлениями у мужчин и женщин.
+
+diff_expenses = np.abs(
+    transactions[(transactions.gender == genders['female']) & (transactions.amount < 0.0)].amount.mean() -
+    transactions[(transactions.gender == genders['male']) & (transactions.amount < 0.0)].amount.mean())
+
+diff_deposits = (
+    np.abs(transactions[(transactions.gender == genders['male']) & (transactions.amount > 0.0)].amount.mean() -
+           transactions[(transactions.gender == genders['female']) & (transactions.amount > 0.0)].amount.mean()))
+
+print("\nМодуль разницы между средними тратами женщин и мужчин = ", round(diff_expenses, 3))
+print("Модуль разницы между средними поступлениями у мужчин и женщин = ", round(diff_deposits, 3))
+
+# ############################################### Task 6 #########################################################
+# По всем типам транзакций рассчитайте максимальную сумму прихода на карту 
+# (из строго положительных сумм по столбцу amount) отдельно для мужчин и женщин 
+# (назовите ее "max_income"). Оставьте по 10 типов транзакций для мужчин и для женщин, 
+# наименьших среди всех типов транзакций по полученным значениям "max_income".
+
+# Выделите среди них те типы транзакций, которые встречаются одновременно и у мужчин, и у женщин.
+
+male_max_incomes = transactions[(transactions.amount > 0.0) & (transactions.gender == genders['male'])]. \
+    groupby('tr_type').amount.max()
+female_max_incomes = transactions[(transactions.amount > 0.0) & (transactions.gender == genders['female'])]. \
+    groupby('tr_type').amount.max()
+
+top10_lowest_male_max_incomes = male_max_incomes.sort_values(ignore_index=False, ascending=True).head(10)
+top10_lowest_female_max_incomes = female_max_incomes.sort_values(ignore_index=False, ascending=True).head(10)
+
+intersected_values = pd.DataFrame(
+    index=pd.Series(np.intersect1d(top10_lowest_male_max_incomes.index, top10_lowest_female_max_incomes.index)),
+    columns=['max_income_male', 'max_income_female'],
+)
+
+intersected_values['max_income_male'] = \
+    top10_lowest_male_max_incomes[top10_lowest_male_max_incomes.index.isin(intersected_values.index)]
+intersected_values['max_income_female'] = \
+    top10_lowest_female_max_incomes[top10_lowest_female_max_incomes.index.isin(intersected_values.index)]
+
+print("\nТоп 10 типов транзакций с наименьшей максимальной суммой прихода среди мужчин:")
+print_dataframe(pd.DataFrame(top10_lowest_male_max_incomes))
+
+print("\nТоп 10 типов транзакций с наименьшей максимальной суммой прихода среди женщин:")
+print_dataframe(pd.DataFrame(top10_lowest_female_max_incomes))
+
+print("\n Типы транзакций, которые встречаются одновременно и у мужчин, и у женщин:")
+print_dataframe(intersected_values)
+
+# ############################################### Task 7 #########################################################
+# Найдите суммы затрат по каждой категории (mcc) для мужчин и для женщин.
+# Найдите топ 10 категорий с самыми большими относительными модулями разности в тратах для разных полов
+# (в ответе должны присутствовать описания mcc кодов).
+
+sum_expenses_for_mcc_codes = pd.DataFrame(
+    index=transactions.mcc_code.unique(),
+)
+
+sum_expenses_for_mcc_codes['male_sum_expenses'] = \
+    transactions[(transactions.gender == genders['male']) & (transactions.amount < 0.0)].groupby('mcc_code').amount.sum()
+
+sum_expenses_for_mcc_codes['female_sum_expenses'] = \
+    transactions[(transactions.gender == genders['female']) & (transactions.amount < 0.0)].groupby('mcc_code').amount.sum()
+
+sum_expenses_for_mcc_codes['diff_between_gender_expenses'] = \
+    np.abs(sum_expenses_for_mcc_codes.male_sum_expenses - sum_expenses_for_mcc_codes.female_sum_expenses)
+
+sum_expenses_for_mcc_codes['mcc_description'] = \
+    tr_mcc_codes.loc[sum_expenses_for_mcc_codes.index].mcc_description
+
+# print_dataframe(sum_expenses_for_mcc_codes)
+
+top10_diff_between_male_and_female_expenses = \
+    sum_expenses_for_mcc_codes.sort_values(by='diff_between_gender_expenses', ignore_index=False, ascending=False).head(10)
+
+print("\n Топ 10 категорий с самыми большими модулями разности в тратах для разных полов:")
+print_dataframe(top10_diff_between_male_and_female_expenses)
+
+
+# ############################################### Task 8 #########################################################
+# Из поля tr_datetime выделите час tr_hour, в который произошла транзакция, как первые 2 цифры до ":".
+# Посчитайте количество транзакций с amount<0 в ночное время для мужчин и женщин. Ночное время - это примерно 00-06 часов.
+
+
+
+
+
+
+
+
+
+
+
+
+
