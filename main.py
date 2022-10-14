@@ -327,14 +327,35 @@ female_number_of_transactions = len(female_night_expenses)
 print("Количество операций по снятию средств среди мужчин в ночное время суток:", male_number_of_transactions)
 print("Количество операций по снятию средств среди женщин в ночное время суток:", female_number_of_transactions)
 
+# ####################################### One of the additional tasks #######################################
+# По каждой категории (mcc) найдите сумму трат в ночное время и в остальное время.
 
+# Найдите соотношение одного к другому. Выведите список 10 категорий с описаниями,
+# упорядоченных по убыванию отношения ночных трат к остальным тратам.
 
+mcc_codes_info = pd.DataFrame(
+    index=transactions.mcc_code.unique(),
+    columns=['mmc_codes_expenses',
+             'night_expenses',
+             'day_expenses',
+             'ratio_of_night_to_day',
+             'mcc_description']
+)
 
+expenses = transactions[(transactions.amount < 0.0)]
+expenses['tr_hour'] = pd.Series(int(tr_datetime[-8:-6]) for tr_datetime in expenses.tr_datetime)
 
+mcc_codes_info['mmc_codes_expenses'] = expenses.groupby('mcc_code').amount.sum()
+mcc_codes_info['night_expenses'] = expenses[(expenses.tr_hour >= 0) & (expenses.tr_hour < 6)].groupby('mcc_code').amount.sum()
+mcc_codes_info['day_expenses']   = expenses[(expenses.tr_hour >= 6) & (expenses.tr_hour <= 23)].groupby('mcc_code').amount.sum()
+mcc_codes_info['ratio_of_night_to_day'] = mcc_codes_info.night_expenses / mcc_codes_info.day_expenses
+mcc_codes_info.update(tr_mcc_codes)
 
+top10_highest_ratio_of_night_to_day = \
+    mcc_codes_info.sort_values(by='ratio_of_night_to_day', ignore_index=False, ascending=False).head(10)
 
-
-
-
+# import tabulate
+print("Топ 10 mcc категорий с наибольшим отношением ночных трат к остальным тратам: ")
+print(tabulate.tabulate(top10_highest_ratio_of_night_to_day, headers='keys', numalign='center', stralign='left', tablefmt='fancy_grid', ))
 
 
